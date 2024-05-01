@@ -12,38 +12,33 @@ class Order(Base):
 
     id = Column(String, primary_key=True)
     userid = Column(String(100))
-    username = Column(String(100))
+    name = Column(String(100))
     primary_phone = Column(Integer)
-    secondary_phone = Column(Integer, nullable=True)
-    order_details = Column(String(255))
+    description = Column(String(255))
     timeline = Column(String(20))
     budget = Column(DECIMAL(6, 2))
     order_count = Column(Integer)
-    language = Column(String(10), default='English')
     subscription = Column(String(10), default='No')
     subscription_date = Column(DATE, default=datetime.now(tz=aa).date())
 
-    def __init__(self, userid, username, name, primary_phone, order_details, lang, subscription_type):
+    def __init__(self, userid, name, primary_phone, description, timeline, budget, subscription_type):
         self.id = self.generate_id()
         self.userid = userid
-        self.username = username
         self.name = name
         self.primary_phone = primary_phone
-        self.order_details = order_details
+        self.description = description
+        self.timeline = timeline
+        self.budget = budget
         self.order_count = 1
-        self.language = lang
         self.subscription = subscription_type
 
     @staticmethod
     def generate_id():
         # Generate a unique 6-digit numeric id without preceding zeros
-        return str(uuid.uuid4().int % 90000 + 10000)
+        return str(uuid.uuid4().int % 900000 + 100000)
 
     def add_order(self):
         self.order_count += 1
-
-    def change_lang(self, lang):
-        self.language = lang
 
 class StatusEnum(enum.Enum):
     active = 'active'
@@ -69,3 +64,16 @@ class Trackable(Base):
     def generate_id():
         # Generate a unique 6-digit numeric id without preceding zeros
         return str(uuid.uuid4().int % 900000 + 100000)
+
+class Client(Base):
+    __tablename__='client'
+    id = Column(Integer, primary_key=True)
+    name = Column(String, nullable=False)
+    phone_number = Column(Integer, nullable=False)
+
+    @staticmethod
+    def generate_id():
+        # Generate a unique 6-digit numeric id without preceding zeros
+        return str(uuid.uuid4().int % 900000 + 100000)
+
+
