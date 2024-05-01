@@ -31,7 +31,6 @@ async def start(update: Update, context: CallbackContext):
                 BotCommand('generate_report_subs', 'See new requests'),
                 BotCommand('generate_report_orders', 'Generate orders report'),
                 BotCommand('generate_report_all_orders', 'Generate all orders report'),
-                BotCommand('delete_subscriber', 'Delete subscriber')
             ],
             scope=BotCommandScopeChat(chat_id=update.effective_chat.id)
         )
@@ -55,7 +54,7 @@ async def start(update: Update, context: CallbackContext):
         unknown = KeyboardButton(text="Unknown Project")
         portfolio = KeyboardButton(text="Previous Works")
 
-        custom_keyboard = [[ known, unknown, portfolio ]]
+        custom_keyboard = [[ known, unknown ]]
         reply_markup = ReplyKeyboardMarkup(custom_keyboard, resize_keyboard=True)
         await update.message.reply_text(
             text="""Pick where to proceed:
@@ -72,14 +71,14 @@ async def choices(update: Update, context: CallbackContext) -> int:
     choice = update.effective_message.text
     logger.info("user pick: %s", choice)
 
-    if lang == "Known Project":
+    if choice == "Known Project":
         await update.message.reply_text(
             text="""""",
             reply_markup=ReplyKeyboardRemove(),
             parse_mode="html"
         )
 
-    elif lang == "Unknown Project":
+    elif choice == "Unknown Project":
         await update.message.reply_text(
             text="""""",
             reply_markup=ReplyKeyboardRemove(),
