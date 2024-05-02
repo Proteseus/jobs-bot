@@ -1,3 +1,5 @@
 .env
 venJobsBot/
 __pycache__/
+database/
+db/
