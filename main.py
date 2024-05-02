@@ -13,6 +13,7 @@ import subprocess
 from dotenv import load_dotenv
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton, Bot, InlineKeyboardButton, InlineKeyboardMarkup, BotCommand, BotCommandScopeChat
 from telegram.ext import Application, CallbackContext, CallbackQueryHandler, CommandHandler, ConversationHandler, filters, MessageHandler, Updater
+from random import choice
 
 load_dotenv()
 TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
@@ -22,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 queue_ = queue.Queue()
 
-CHOICES = range(1)
+CHOICES, DESCRIPTION, BUDGET, TIMELINE, CONTACT = range(5)
 
 async def start(update: Update, context: CallbackContext):
     if str(update.effective_chat.id) == os.getenv('USERNAME'):
@@ -67,31 +68,66 @@ async def start(update: Update, context: CallbackContext):
         return CHOICES
 
 async def choices(update: Update, context: CallbackContext) -> int:
-    """Pick which section to move on to"""
+    """Pick which section to move on to and ask for description of project"""
     choice = update.effective_message.text
     logger.info("user pick: %s", choice)
 
-    if choice == "Known Project":
+    if choice == "Known Project" or choice == "Unknown Project":
         await update.message.reply_text(
-            text="""""",
+            text="Provide a brief description of the project you wish to undertake:",
             reply_markup=ReplyKeyboardRemove(),
-            parse_mode="html"
         )
+        return DESCRIPTION
 
-    elif choice == "Unknown Project":
-        await update.message.reply_text(
-            text="""""",
-            reply_markup=ReplyKeyboardRemove(),
-            parse_mode="html"
-        )
+    elif choice == "Previous Works":
+        return ConversationHandler.END
 
-    custom_keyboard = [[ order_laundry ]]
-    reply_markup = ReplyKeyboardMarkup(custom_keyboard, resize_keyboard=True)
+async def description(update: Update, context: CallbackContext) -> int:
+    """Get the description and ask for budget of the project"""
+    description = update.effective_message.text
+    logger.info("user description: %s", description)
+
     await update.message.reply_text(
-        text=text,
-        reply_markup=reply_markup
+        text="Now please, if you have an estimated budget for the project, if not just put in a '-' and proceed:",
+        reply_markup=ReplyKeyboardRemove(),
     )
+    
+    return BUDGET
 
+async def budget(update: Update, context: CallbackContext) -> int:
+    """Get the budget and ask for an estimated time of the project"""
+    budget = update.effective_message.text
+    logger.info("user budget: %s", budget)
+
+    await update.message.reply_text(
+        text="Now please, if you have an estimated time for the project, if not just put in a '-' and proceed:",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+    
+    return TIMELINE
+
+async def timeline(update: Update, context: CallbackContext) -> int:
+    """Get the estimated time and ask for a contact of the client"""
+    timeline = update.effective_message.text
+    logger.info("user timeline: %s", timeline)
+
+    await update.message.reply_text(
+        text="You will now be prompted to share your contact info:",
+        reply_markup=ReplyKeyboardMarkup([[KeyboardButton(text="Share Contact", request_contact=True)]], resize_keyboard=True)
+    )
+    
+    return CONTACT
+
+async def contact(update: Update, context: CallbackContext) -> int:
+    """Get client contact and log project"""
+    contact = update.message.contact
+    logger.info("user contact: %s, %s", contact.first_name, contact.phone_number)
+
+    await update.message.reply_text(
+        text="Thank you, your project request has been logged. The developer will contact you shortly.\n Thank you for your patience",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+    
     return ConversationHandler.END
 
 async def cancel(update: Update, context: CallbackContext) -> int:
@@ -123,8 +159,12 @@ def main():
 
     # Commands
     conv_handler = ConversationHandler(
-        entry_points=[CommandHandler('choices', choices)],
+        entry_points=[MessageHandler(filters.Regex(r'^(Unknown Project|Known Project|Previous Works)'), choices)],
         states={
+            DESCRIPTION: [MessageHandler(filters.TEXT, description)],
+            BUDGET: [MessageHandler(filters.TEXT, budget)],
+            TIMELINE: [MessageHandler(filters.TEXT, timeline)],
+            CONTACT: [MessageHandler(filters.CONTACT, contact)],
         },
         fallbacks=[CommandHandler("cancel", cancel)],
     )
