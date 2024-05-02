@@ -1,7 +1,7 @@
 import enum
 import uuid
 from datetime import datetime, timedelta, timezone
-from sqlalchemy import Column, Enum, False_, Integer, String, DECIMAL, DATE, DATETIME, ForeignKey
+from sqlalchemy import Column, Enum, Integer, String, DATETIME, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
@@ -16,12 +16,9 @@ class Order(Base):
     primary_phone = Column(Integer)
     description = Column(String(255))
     timeline = Column(String(20))
-    budget = Column(DECIMAL(6, 2))
-    order_count = Column(Integer)
-    subscription = Column(String(10), default='No')
-    subscription_date = Column(DATE, default=datetime.now(tz=aa).date())
+    budget = Column(String(20))
 
-    def __init__(self, userid, name, primary_phone, description, timeline, budget, subscription_type):
+    def __init__(self, userid, name, primary_phone, description, timeline, budget):
         self.id = self.generate_id()
         self.userid = userid
         self.name = name
@@ -29,8 +26,6 @@ class Order(Base):
         self.description = description
         self.timeline = timeline
         self.budget = budget
-        self.order_count = 1
-        self.subscription = subscription_type
 
     @staticmethod
     def generate_id():
@@ -70,10 +65,13 @@ class Client(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
     phone_number = Column(Integer, nullable=False)
+    
+    def __init__(self, name, phone_number):
+        self.id = self.generate_id()
+        self.name = name
+        self.phone_number = phone_number
 
     @staticmethod
     def generate_id():
         # Generate a unique 6-digit numeric id without preceding zeros
         return str(uuid.uuid4().int % 900000 + 100000)
-
-
