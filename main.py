@@ -1,19 +1,13 @@
 import os
 import queue
-import asyncio
 import logging
 import tracemalloc
-from pprint import pprint
-from threading import Thread
-import subprocess
 
-#from db import create_user_order, add_order, delete_order, change_lang, track, session
-#from model import Order, Base
+from db import create_project_order
 
 from dotenv import load_dotenv
-from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton, Bot, InlineKeyboardButton, InlineKeyboardMarkup, BotCommand, BotCommandScopeChat
-from telegram.ext import Application, CallbackContext, CallbackQueryHandler, CommandHandler, ConversationHandler, filters, MessageHandler, Updater
-from random import choice
+from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton, BotCommand, BotCommandScopeChat
+from telegram.ext import Application, CallbackContext, CommandHandler, ConversationHandler, filters, MessageHandler
 
 load_dotenv()
 TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
@@ -85,6 +79,7 @@ async def choices(update: Update, context: CallbackContext) -> int:
 async def description(update: Update, context: CallbackContext) -> int:
     """Get the description and ask for budget of the project"""
     description = update.effective_message.text
+    context.user_data['description'] = description
     logger.info("user description: %s", description)
 
     await update.message.reply_text(
@@ -97,6 +92,7 @@ async def description(update: Update, context: CallbackContext) -> int:
 async def budget(update: Update, context: CallbackContext) -> int:
     """Get the budget and ask for an estimated time of the project"""
     budget = update.effective_message.text
+    context.user_data['budget'] = budget
     logger.info("user budget: %s", budget)
 
     await update.message.reply_text(
@@ -109,6 +105,7 @@ async def budget(update: Update, context: CallbackContext) -> int:
 async def timeline(update: Update, context: CallbackContext) -> int:
     """Get the estimated time and ask for a contact of the client"""
     timeline = update.effective_message.text
+    context.user_data['timeline'] = timeline
     logger.info("user timeline: %s", timeline)
 
     await update.message.reply_text(
@@ -121,11 +118,15 @@ async def timeline(update: Update, context: CallbackContext) -> int:
 async def contact(update: Update, context: CallbackContext) -> int:
     """Get client contact and log project"""
     contact = update.message.contact
+    context.user_data['contact'] = contact
     logger.info("user contact: %s, %s", contact.first_name, contact.phone_number)
 
+    project_tracker = create_project_order(context.user_data['contact'].user_id, context.user_data['contact'].first_name, context.user_data['contact'].phone_number, context.user_data['description'], context.user_data['timeline'], context.user_data['budget'])
+    
     await update.message.reply_text(
-        text="Thank you, your project request has been logged. The developer will contact you shortly.\n Thank you for your patience",
+        text=f"Thank you, your project request has been logged with number `{project_tracker}`. The developer will contact you shortly.\n Thank you for your patience",
         reply_markup=ReplyKeyboardRemove(),
+        parse_mode='markdown'
     )
     
     return ConversationHandler.END
