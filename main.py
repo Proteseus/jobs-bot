@@ -54,7 +54,7 @@ async def start(update: Update, context: CallbackContext):
         await update.message.reply_text(
             text="""Pick where to proceed:
             Known project if you have a set of requirements
-            Unkown project if you have a vision
+            Unknown project if you have a vision
             Previous works to see previous works""",
             reply_markup=reply_markup
         )
