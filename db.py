@@ -1,4 +1,5 @@
 import os
+import json
 import logging
 
 from models import Order, Client, Base
@@ -35,12 +36,27 @@ def create_client_entry(userid, name, primary_phone, description, timeline, budg
     logger.info('client %s registered', client.name)
     return client
 
-def create_project_order(userid, name, primary_phone, description, timeline, budget):
-    order = Order(userid, name, primary_phone, description, timeline, budget)
+def create_project_order(userid, username, name, primary_phone, description, timeline, budget):
+    order = Order(userid, username, name, primary_phone, description, timeline, budget)
     session.add(order)
     session.commit()
     logger.info('order %s registered', order.id)
     return order.id
+
+def fetch_orders():
+    order = session.query(Order).all()
+
+    # Convert the query result to a list of dictionaries
+    serialized_order = [item.__dict__ for item in order]
+
+    # Remove the internal keys from the dictionaries
+    for item in serialized_order:
+        item.pop('_sa_instance_state', None)
+
+    # Serialize to JSON
+    order_json = json.dumps(serialized_order)
+
+    return order_json
 
 def delete_order(order_id):
     order = session.query(Order).filter(Order.id == order_id).first()

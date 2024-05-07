@@ -3,7 +3,7 @@ import queue
 import logging
 import tracemalloc
 
-from db import create_project_order
+from db import create_project_order, fetch_orders
 
 from dotenv import load_dotenv
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton, BotCommand, BotCommandScopeChat
@@ -23,7 +23,7 @@ async def start(update: Update, context: CallbackContext):
     if str(update.effective_chat.id) == os.getenv('USERID'):
         await context.bot.set_my_commands(
             commands=[
-                BotCommand('generate_report_subs', 'See new requests'),
+                BotCommand('generate_report', 'See new requests'),
                 BotCommand('generate_report_orders', 'Generate orders report'),
                 BotCommand('generate_report_all_orders', 'Generate all orders report'),
             ],
@@ -32,6 +32,7 @@ async def start(update: Update, context: CallbackContext):
     else:
         await context.bot.set_my_commands(
             commands=[
+                BotCommand("start", "New project request"),
                 BotCommand("cancel", "end conversation"),
                 BotCommand("contact_us", "contact us"),
                 BotCommand("about","info")
@@ -64,7 +65,7 @@ async def start(update: Update, context: CallbackContext):
 async def choices(update: Update, context: CallbackContext) -> int:
     """Pick which section to move on to and ask for description of project"""
     choice = update.effective_message.text
-    logger.info("user %s pick: %s", update.effective_chat.id, choice)
+    logger.info("user %s pick: %s", update.effective_chat.username, choice)
 
     if choice == "Known Project" or choice == "Unknown Project":
         await update.message.reply_text(
@@ -80,7 +81,7 @@ async def description(update: Update, context: CallbackContext) -> int:
     """Get the description and ask for budget of the project"""
     description = update.effective_message.text
     context.user_data['description'] = description
-    logger.info("user %s description: %s", update.effective_chat.id, description)
+    logger.info("user %s description: %s", update.effective_chat.username, description)
 
     await update.message.reply_text(
         text="Now please, if you have an estimated budget for the project, if not just put in a '-' and proceed:",
@@ -93,7 +94,7 @@ async def budget(update: Update, context: CallbackContext) -> int:
     """Get the budget and ask for an estimated time of the project"""
     budget = update.effective_message.text
     context.user_data['budget'] = budget
-    logger.info("user %s budget: %s", update.effective_chat.id, budget)
+    logger.info("user %s budget: %s", update.effective_chat.username, budget)
 
     await update.message.reply_text(
         text="Now please, if you have an estimated time for the project, if not just put in a '-' and proceed:",
@@ -106,7 +107,7 @@ async def timeline(update: Update, context: CallbackContext) -> int:
     """Get the estimated time and ask for a contact of the client"""
     timeline = update.effective_message.text
     context.user_data['timeline'] = timeline
-    logger.info("user %s timeline: %s", update.effective_chat.id, timeline)
+    logger.info("user %s timeline: %s", update.effective_chat.username, timeline)
 
     await update.message.reply_text(
         text="You will now be prompted to share your contact info:",
@@ -119,9 +120,9 @@ async def contact(update: Update, context: CallbackContext) -> int:
     """Get client contact and log project"""
     contact = update.message.contact
     context.user_data['contact'] = contact
-    logger.info("user %s contact: %s, %s", update.effective_chat.id, contact.first_name, contact.phone_number)
+    logger.info("user %s contact: %s, %s", update.effective_chat.username, contact.first_name, contact.phone_number)
 
-    project_tracker = create_project_order(context.user_data['contact'].user_id, context.user_data['contact'].first_name, context.user_data['contact'].phone_number, context.user_data['description'], context.user_data['timeline'], context.user_data['budget'])
+    project_tracker = create_project_order(context.user_data['contact'].user_id, update.effective_chat.username, context.user_data['contact'].first_name, context.user_data['contact'].phone_number, context.user_data['description'], context.user_data['timeline'], context.user_data['budget'])
     
     await update.message.reply_text(
         text=f"Thank you, your project request has been logged with number `{project_tracker}`. The developer will contact you shortly.\n Thank you for your patience",
@@ -129,9 +130,10 @@ async def contact(update: Update, context: CallbackContext) -> int:
         parse_mode='markdown'
     )
     
-    message = "Order: #`{}`\nName: {}\nPhone: {}\nDetails: {}\nBudget: {}\nTimeline: {}".format(
+    message = "Order: #`{}`\nName: {}\nUser: `@{}`\nPhone: {}\nDetails: {}\nBudget: {}\nTimeline: {}".format(
     project_tracker,
     context.user_data['contact'].first_name,
+    update.effective_chat.username,
     context.user_data['contact'].phone_number,
     context.user_data['description'],
     context.user_data['budget'],
@@ -166,6 +168,15 @@ async def cancel(update: Update, context: CallbackContext) -> int:
     )
     return ConversationHandler.END
 
+async def admin_fetch_orders(update: Update, context: CallbackContext):
+    """Get orders"""
+    logger.info("Orders fetched...")
+    if str(update.effective_user.id) == os.getenv('USERID'):
+        await update.message.reply_text(
+            text=fetch_orders()
+        )
+
+
 async def error_handler(update: Update, context: CallbackContext):
     """Log the error and handle it gracefully"""
     logger.error(msg="Exception occurred", exc_info=context.error)
@@ -190,6 +201,7 @@ def main():
 
     application.add_handlers([conv_handler])
     application.add_handler(CommandHandler('start', start))
+    application.add_handler(CommandHandler('generate_report', admin_fetch_orders))
 
     # Run bot
     application.run_polling(allowed_updates=Update.ALL_TYPES, poll_interval=1.0)

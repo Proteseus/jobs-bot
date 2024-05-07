@@ -1,7 +1,7 @@
 import enum
 import uuid
 from datetime import datetime, timedelta, timezone
-from sqlalchemy import Column, Enum, Integer, String, DATETIME, ForeignKey
+from sqlalchemy import Column, Enum, BigInteger, Integer, String, TIMESTAMP, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
@@ -12,15 +12,17 @@ class Order(Base):
 
     id = Column(String, primary_key=True)
     userid = Column(String(100))
+    username = Column(String(100))
     name = Column(String(100))
-    primary_phone = Column(Integer)
+    primary_phone = Column(BigInteger)
     description = Column(String(255))
     timeline = Column(String(20))
     budget = Column(String(20))
 
-    def __init__(self, userid, name, primary_phone, description, timeline, budget):
+    def __init__(self, userid, username, name, primary_phone, description, timeline, budget):
         self.id = self.generate_id()
         self.userid = userid
+        self.username = username
         self.name = name
         self.primary_phone = primary_phone
         self.description = description
@@ -43,7 +45,7 @@ class Trackable(Base):
     __tablename__ = 'trackable'
     id = Column(Integer, primary_key=True)
     order_id = Column(String, ForeignKey('order.id'))
-    date = Column(DATETIME, default=datetime.now(tz=aa))
+    date = Column(TIMESTAMP, default=datetime.now(tz=aa))
     status = Column(Enum(StatusEnum), nullable=False)
 
     def __init__(self, order_id):
