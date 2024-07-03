@@ -13,5 +13,8 @@ ADD . /app
 # Install any needed packages specified in requirements.txt
 RUN pip install -r requirements.txt
 
+# Make port 443 available to the world outside this container
+EXPOSE 443
+
 # Run bot.py when the container launches
 CMD ["python", "main.py"]
