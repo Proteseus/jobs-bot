@@ -190,7 +190,8 @@ async def admin_fetch_orders(update: Update, context: CallbackContext):
     logger.info("Orders fetched...")
     if str(update.effective_user.id) == os.getenv('USERID'):
         orders = fetch_orders()
-        formatted_orders = json.dumps(orders, indent=4)
+        orders_list = json.loads(orders)
+        formatted_orders = json.dumps(orders_list, indent=4)
         await update.message.reply_text(
             text=f"<pre>{formatted_orders}</pre>",
             parse_mode="HTML"
