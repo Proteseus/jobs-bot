@@ -8,6 +8,10 @@ from db import create_project_order, fetch_orders
 from dotenv import load_dotenv
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton, BotCommand, BotCommandScopeChat
 from telegram.ext import Application, CallbackContext, CommandHandler, ConversationHandler, filters, MessageHandler
+from flask import Flask, jsonify
+
+# Create a Flask app
+app = Flask(__name__)
 
 load_dotenv()
 TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
@@ -18,6 +22,11 @@ logger = logging.getLogger(__name__)
 queue_ = queue.Queue()
 
 CHOICES, DESCRIPTION, BUDGET, TIMELINE, CONTACT = range(5)
+
+# Define a route that returns a JSON greeting message
+@app.route('/')
+def hello():
+    return jsonify(message="Hello, welcome to the Jobs-Bot by t.me/Leviticus_98!")
 
 async def start(update: Update, context: CallbackContext):
     if str(update.effective_chat.id) == os.getenv('USERID'):
@@ -203,14 +212,21 @@ def main():
     application.add_handler(CommandHandler('start', start))
     application.add_handler(CommandHandler('generate_report', admin_fetch_orders))
 
+    # Run bot in a separate thread to avoid blocking the Flask app
+    import threading
+    threading.Thread(target=application.run_polling, kwargs={'allowed_updates': Update.ALL_TYPES, 'poll_interval': 1.0}).start()
+
     # Run bot
-    application.run_polling(allowed_updates=Update.ALL_TYPES, poll_interval=1.0)
+    #application.run_polling(allowed_updates=Update.ALL_TYPES, poll_interval=1.0)
 
 
 if __name__ == '__main__':
     tracemalloc.start()
 
     main()
+
+    # Run the Flask app
+    app.run(host='0.0.0.0', port=8000)
 
     tracemalloc.stop()
     print(tracemalloc.get_object_traceback())
