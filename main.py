@@ -1,3 +1,4 @@
+import json
 import os
 import queue
 import logging
@@ -188,8 +189,11 @@ async def admin_fetch_orders(update: Update, context: CallbackContext):
     """Get orders"""
     logger.info("Orders fetched...")
     if str(update.effective_user.id) == os.getenv('USERID'):
+        orders = fetch_orders()
+        formatted_orders = json.dumps(orders, indent=4)
         await update.message.reply_text(
-            text=fetch_orders()
+            text=f"<pre>{formatted_orders}</pre>",
+            parse_mode="HTML"
         )
 
 
