@@ -2,3 +2,4 @@ python-telegram-bot
 python-dotenv
 sqlalchemy
 psycopg2-binary
+flask
