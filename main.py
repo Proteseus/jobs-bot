@@ -109,16 +109,23 @@ async def description(update: Update, context: CallbackContext) -> int:
 
 async def budget(update: Update, context: CallbackContext) -> int:
     """Get the budget and ask for an estimated time of the project"""
-    budget = update.effective_message.text
-    context.user_data['budget'] = budget
-    logger.info("user %s budget: %s", update.effective_chat.username, budget)
+    budget_text = update.effective_message.text
+    try:
+        budget = float(budget_text)
+        context.user_data['budget'] = budget
+        logger.info("user %s budget: %s", update.effective_chat.username, budget)
 
-    await update.message.reply_text(
-        text="Now please, if you have an estimated time for the project, if not just put in a '-' and proceed:",
-        reply_markup=ReplyKeyboardRemove(),
-    )
-    
-    return TIMELINE
+        await update.message.reply_text(
+            text="Now please, if you have an estimated time for the project, if not just put in a '-' and proceed:",
+            reply_markup=ReplyKeyboardRemove(),
+        )
+        return TIMELINE
+    except ValueError:
+        await update.message.reply_text(
+            text="Please enter a valid number for the budget:",
+            reply_markup=ReplyKeyboardRemove()
+        )
+        return BUDGET
 
 async def timeline(update: Update, context: CallbackContext) -> int:
     """Get the estimated time and ask for a contact of the client"""
