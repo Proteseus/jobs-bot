@@ -1,7 +1,12 @@
 import os
 import queue
 import logging
+import asyncio
+from threading import Thread
 import tracemalloc
+
+import flask
+from sqlalchemy.orm.base import ATTR_WAS_SET
 
 from db import create_project_order, fetch_orders
 
@@ -9,6 +14,8 @@ from dotenv import load_dotenv
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton, BotCommand, BotCommandScopeChat
 from telegram.ext import Application, CallbackContext, CommandHandler, ConversationHandler, filters, MessageHandler
 from flask import Flask, jsonify
+from aiohttp import web
+from aiohttp.web_runner import AppRunner, TCPSite
 
 # Create a Flask app
 app = Flask(__name__)
@@ -192,7 +199,15 @@ async def error_handler(update: Update, context: CallbackContext):
     await update.message.reply_text('Sorry, an error occurred. Please try again.')
 
 ########################################################
-def main():
+async def run_flask():
+    runner = AppRunner(web.Application())
+    await runner.setup()
+    site = TCPSite(runner, '0.0.0.0', 8000)
+    await site.start()
+    while True:
+        await asyncio.sleep(3600)
+
+async def run_bot():
     # bot runner
     application = Application.builder().token(TOKEN).build()
 
@@ -212,21 +227,26 @@ def main():
     application.add_handler(CommandHandler('start', start))
     application.add_handler(CommandHandler('generate_report', admin_fetch_orders))
 
-    # Run bot in a separate thread to avoid blocking the Flask app
-    import threading
-    threading.Thread(target=application.run_polling, kwargs={'allowed_updates': Update.ALL_TYPES, 'poll_interval': 1.0}).start()
-
     # Run bot
-    #application.run_polling(allowed_updates=Update.ALL_TYPES, poll_interval=1.0)
+    await application.initialize()
+    await application.start()
+    await application.updater.start_polling()
+    # await application.shutdown()
+    # await application.stop()
 
+    # application.run_polling(allowed_updates=Update.ALL_TYPES, poll_interval=1.0)
+
+async def main():
+    bot_task = asyncio.create_task(run_bot())
+    flask_task = asyncio.create_task(run_flask())
+
+    await asyncio.gather(bot_task, flask_task)
 
 if __name__ == '__main__':
     tracemalloc.start()
 
-    main()
-
-    # Run the Flask app
-    app.run(host='0.0.0.0', port=8000)
+    asyncio.run(main())
 
     tracemalloc.stop()
     print(tracemalloc.get_object_traceback())
+
