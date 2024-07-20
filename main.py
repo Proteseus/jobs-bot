@@ -225,12 +225,12 @@ async def run_bot():
 
     # Commands
     conv_handler = ConversationHandler(
-        entry_points=[MessageHandler(filters.Regex(r'^(Unknown Project|Known Project|Previous Works)'), choices)],
+        entry_points=[MessageHandler(filters.Regex(r'^(Unknown Project|Known Project|Previous Works)') & ~filters.COMMAND, choices)],
         states={
-            DESCRIPTION: [MessageHandler(filters.TEXT, description)],
-            BUDGET: [MessageHandler(filters.TEXT, budget)],
-            TIMELINE: [MessageHandler(filters.TEXT, timeline)],
-            CONTACT: [MessageHandler(filters.CONTACT, contact)],
+            DESCRIPTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, description)],
+            BUDGET: [MessageHandler(filters.TEXT & ~filters.COMMAND, budget)],
+            TIMELINE: [MessageHandler(filters.TEXT & ~filters.COMMAND, timeline)],
+            CONTACT: [MessageHandler(filters.CONTACT & ~filters.COMMAND, contact)],
         },
         fallbacks=[CommandHandler("cancel", cancel)],
     )
