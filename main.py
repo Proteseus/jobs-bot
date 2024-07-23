@@ -137,7 +137,7 @@ async def timeline(update: Update, context: CallbackContext) -> int:
         text="You will now be prompted to share your contact info:",
         reply_markup=ReplyKeyboardMarkup([[KeyboardButton(text="Share Contact", request_contact=True)]], resize_keyboard=True)
     )
-    
+
     return CONTACT
 
 async def contact(update: Update, context: CallbackContext) -> int:
@@ -146,14 +146,18 @@ async def contact(update: Update, context: CallbackContext) -> int:
     context.user_data['contact'] = contact
     logger.info("user %s contact: %s, %s", update.effective_chat.username, contact.first_name, contact.phone_number)
 
-    project_tracker = create_project_order(context.user_data['contact'].user_id, update.effective_chat.username, context.user_data['contact'].first_name, context.user_data['contact'].phone_number, context.user_data['description'], context.user_data['timeline'], context.user_data['budget'])
-    
+    try:
+        project_tracker = create_project_order(context.user_data['contact'].user_id, update.effective_chat.username, context.user_data['contact'].first_name, context.user_data['contact'].phone_number, context.user_data['description'], context.user_data['timeline'], context.user_data['budget'])
+    except Exception as e:
+        logger.warn(str(e))
+        return ConversationHandler.END
+
     await update.message.reply_text(
         text=f"Thank you, your project request has been logged with number `{project_tracker}`. The developer will contact you shortly.\n Thank you for your patience",
         reply_markup=ReplyKeyboardRemove(),
         parse_mode='markdown'
     )
-    
+
     message = "Order: #`{}`\nName: {}\nUser: `@{}`\nPhone: {}\nDetails: {}\nBudget: {}\nTimeline: {}".format(
     project_tracker,
     context.user_data['contact'].first_name,
@@ -172,7 +176,7 @@ async def contact(update: Update, context: CallbackContext) -> int:
         parse_mode='markdown'
     )
     logger.info("Order recieved and transmitted to %s.", chat_id)
-        
+
     return ConversationHandler.END
 
 async def cancel(update: Update, context: CallbackContext) -> int:
@@ -183,7 +187,7 @@ async def cancel(update: Update, context: CallbackContext) -> int:
             reply_markup=ReplyKeyboardRemove()
         )
         return ConversationHandler.END
-    
+
     user = update.message.from_user
     logger.info("User %s canceled the conversation.", user.first_name)
     await update.message.reply_text(
