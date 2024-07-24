@@ -44,7 +44,10 @@ def create_project_order(userid, username, name, primary_phone, description, tim
     return order.id
 
 def fetch_orders():
-    order = session.query(Order).all()
+    try:
+        order = session.query(Order).all()
+    except Exception as e:
+        logger.warn(e)
 
     # Convert the query result to a list of dictionaries
     serialized_order = [item.__dict__ for item in order]
