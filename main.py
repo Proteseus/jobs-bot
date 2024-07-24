@@ -3,6 +3,7 @@ import os
 import queue
 import logging
 import asyncio
+import re
 from threading import Thread
 import tracemalloc
 
@@ -110,16 +111,25 @@ async def description(update: Update, context: CallbackContext) -> int:
 async def budget(update: Update, context: CallbackContext) -> int:
     """Get the budget and ask for an estimated time of the project"""
     budget_text = update.effective_message.text
-    try:
-        budget = float(budget_text)
-        context.user_data['budget'] = budget
-        logger.info("user %s budget: %s", update.effective_chat.username, budget)
 
-        await update.message.reply_text(
-            text="Now please, if you have an estimated time for the project, if not just put in a '-' and proceed:",
-            reply_markup=ReplyKeyboardRemove(),
-        )
-        return TIMELINE
+    try:
+        # Regular expression to match valid budget formats
+        budget_regex = re.compile(r'^\s*([\$|USD|usd|Br|brr|birr|Brr|Birr|]|[\$|USD|usd|Br|brr|birr|Brr|Birr|]*\s*)?(\d{1,3}(,\d{3})*(\.\d+)?|\d+(\.\d+)?)(\s*[\$|USD|usd|Br|brr|birr|Brr|Birr|]|[\$|USD|usd|Br|brr|birr|Brr|Birr|])?\s*$')
+
+        match = budget_regex.match(budget_text)
+
+        if match:
+            numerical_part = match.group(2).replace(",", "")
+            budget = float(numerical_part)
+
+            context.user_data['budget'] = budget
+            logger.info("user %s budget: %s", update.effective_chat.username, budget)
+
+            await update.message.reply_text(
+                text="Now please, if you have an estimated time for the project, if not just put in a '-' and proceed:",
+                reply_markup=ReplyKeyboardRemove(),
+            )
+            return TIMELINE
     except ValueError:
         await update.message.reply_text(
             text="Please enter a valid number for the budget:",
