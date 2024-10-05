@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 load_dotenv()
 
-db_uri = os.getenv('SQLALCHEMY_DATABASE_URI')
+db_uri = os.getenv('DATABASE_URI')
 engine = create_engine(db_uri)
 Session = sessionmaker(bind=engine)
 
